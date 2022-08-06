@@ -20,7 +20,7 @@
         return;
     }
 
-    
+    [SmaatoSDK loadInterstitialForAdSpaceId:adSpaceId delegate:self];
 }
 
 - (void) showInterstitialAd {
