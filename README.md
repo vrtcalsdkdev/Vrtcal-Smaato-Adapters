@@ -1,1 +1,0 @@
-# Vrtcal-Smaato-Adapters
