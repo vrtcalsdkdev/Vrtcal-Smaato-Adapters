@@ -1,96 +1,71 @@
-//
-//  VRTInterstitialCustomEventGoogleMobileAds.m
-//
-//  Created by Scott McCoy on 5/9/19.
-//  Copyright © 2019 VRTCAL. All rights reserved.
-//
-
 //Header
-#import "VRTInterstitialCustomEventVungle.h"
+#import "VRTInterstitialCustomEventSmaato.h"
 
 //Dependencies
-#import "VRTVungleManager.h"
+@import SmaatoSDKInterstitial;
 
 
-@interface VRTInterstitialCustomEventVungle()
-@property NSString *placementId;
+@interface VRTInterstitialCustomEventSmaato() <SMAInterstitialDelegate>
+@property SMAInterstitial *smaInterstitial;
 @end
 
-@implementation VRTInterstitialCustomEventVungle
+@implementation VRTInterstitialCustomEventSmaato
 
 - (void) loadInterstitialAd {
-    self.placementId = [self.customEventConfig.thirdPartyCustomEventData objectForKey:@"adUnitId"];
+    NSString *adSpaceId = [self.customEventConfig.thirdPartyCustomEventData objectForKey:@"adUnitId"];
     
-    if (self.placementId == nil) {
-        VRTError *error = [VRTError errorWithCode:VRTErrorCodeCustomEvent message:@"No placement Id"];
+    if (adSpaceId == nil) {
+        VRTError *error = [VRTError errorWithCode:VRTErrorCodeCustomEvent message:@"No adSpaceId"];
         [self.customEventLoadDelegate customEventFailedToLoadWithError:error];
         return;
     }
+
     
-    NSError *error = [[VRTVungleManager singleton]
-        loadPlacementWithID:self.placementId
-        withSize:VungleAdSizeUnknown
-        vrtVungleManagerDelegate:(id <VRTVungleManagerDelegate>) self
-    ];
-    
-    if (error) {
-        [self.customEventLoadDelegate customEventFailedToLoadWithError:error];
-        return;
-    }
 }
 
 - (void) showInterstitialAd {
     UIViewController *vc = [self.viewControllerDelegate vrtViewControllerForModalPresentation];
-    [[VRTVungleManager singleton] showInterstitial:self.placementId viewController:vc];
+    [self.smaInterstitial showFromViewController:vc];
 }
 
 
 #pragma mark - VRTVungleManagerDelegate
-- (void)vungleAdViewedForPlacement:(nullable NSString *)placementID {
-    [self.customEventShowDelegate customEventShown];
+
+- (void)interstitialDidLoad:(SMAInterstitial *_Nonnull)interstitial {
+    self.smaInterstitial = interstitial;
+    [self.customEventLoadDelegate customEventLoaded];
 }
 
-- (void)vungleDidCloseAdForPlacementID:(nonnull NSString *)placementID {
-    [self.customEventShowDelegate customEventDidDismissModal:VRTModalTypeUnknown];
+- (void)interstitial:(SMAInterstitial *_Nullable)interstitial didFailWithError:(NSError *_Nonnull)error {
+    [self.customEventLoadDelegate customEventFailedToLoadWithError:error];
 }
 
-- (void)vungleDidShowAdForPlacementID:(nullable NSString *)placementID {
-    [self.customEventShowDelegate customEventShown];
+- (void)interstitialDidTTLExpire:(SMAInterstitial *_Nonnull)interstitial {
+    //No VRT Analog
 }
 
-- (void)vungleRewardUserForPlacementID:(nullable NSString *)placementID {
-    // No VRT analog
+- (void)interstitialWillAppear:(SMAInterstitial *_Nonnull)interstitial {
+    [self.customEventShowDelegate customEventWillPresentModal:VRTModalTypeInterstitial];
 }
 
-- (void)vungleTrackClickForPlacementID:(nullable NSString *)placementID {
+- (void)interstitialDidAppear:(SMAInterstitial *_Nonnull)interstitial {
+    [self.customEventShowDelegate customEventDidPresentModal:VRTModalTypeInterstitial];
+}
+
+- (void)interstitialWillDisappear:(SMAInterstitial *_Nonnull)interstitial {
+    [self.customEventShowDelegate customEventWillDismissModal:VRTModalTypeInterstitial];
+}
+
+- (void)interstitialDidDisappear:(SMAInterstitial *_Nonnull)interstitial {
+    [self.customEventShowDelegate customEventDidDismissModal:VRTModalTypeInterstitial];
+}
+
+- (void)interstitialDidClick:(SMAInterstitial *_Nonnull)interstitial {
     [self.customEventShowDelegate customEventClicked];
 }
 
-- (void)vungleWillCloseAdForPlacementID:(nonnull NSString *)placementID {
-    [self.customEventShowDelegate customEventWillDismissModal:VRTModalTypeUnknown];
-}
-
- - (void)vungleWillLeaveApplicationForPlacementID:(nullable NSString *)placementID {
+- (void)interstitialWillLeaveApplication:(SMAInterstitial *_Nonnull)interstitial {
     [self.customEventShowDelegate customEventWillLeaveApplication];
 }
 
-- (void)vungleWillShowAdForPlacementID:(nullable NSString *)placementID {
-    // No VRT Analog
-}
-
-- (void)vungleAdPlayabilityUpdate:(BOOL)isAdPlayable placementID:(nullable NSString *)placementID error:(nullable NSError *)error {
-    
-    if (error) {
-        [self.customEventLoadDelegate customEventFailedToLoadWithError:error];
-        return;
-    }
-    
-    if (!isAdPlayable) {
-        VRTError *vrtError = [VRTError errorWithCode:VRTErrorCodeNoFill message:@"Vungle Ad Not Playable"];
-        [self.customEventLoadDelegate customEventFailedToLoadWithError:vrtError];
-        return;
-    }
-    
-    [self.customEventLoadDelegate customEventLoaded];
-}
 @end

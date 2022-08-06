@@ -1,30 +1,22 @@
-//
-//  VRTBannerCustomEventGoogleMobileAds.m
-//
-//  Created by Scott McCoy on 5/9/19.
-//  Copyright © 2019 VRTCAL. All rights reserved.
-//
-
 //Header
-#import "VRTBannerCustomEventVungle.h"
+#import "VRTBannerCustomEventSmaato.h"
 
 //Dependencies
-#import "VRTVungleManager.h"
+@import SmaatoSDKBanner;
 
-@interface VRTBannerCustomEventVungle()
-@property UIView* containerView;
+@interface VRTBannerCustomEventSmaato() <SMABannerViewDelegate>
+@property SMABannerView *bannerView;
 @end
 
 
 //Vungle Banner Adapter, Vrtcal as Primary
-@implementation VRTBannerCustomEventVungle
+@implementation VRTBannerCustomEventSmaato
 
 - (void) loadBannerAd {
-    NSString *placementId = [self.customEventConfig.thirdPartyCustomEventData objectForKey:@"adUnitId"];
-
+    NSString *adSpaceId = [self.customEventConfig.thirdPartyCustomEventData objectForKey:@"adUnitId"];
     
-    if (placementId == nil) {
-        VRTError *error = [VRTError errorWithCode:VRTErrorCodeCustomEvent message:@"No placement Id"];
+    if (adSpaceId == nil) {
+        VRTError *error = [VRTError errorWithCode:VRTErrorCodeCustomEvent message:@"No adSpaceId"];
         [self.customEventLoadDelegate customEventFailedToLoadWithError:error];
         return;
     }
@@ -36,75 +28,57 @@
         self.customEventConfig.adSize.height
     );
     
-    //Must precede loadPlacementWithID as vungleAdPlayabilityUpdate is often called immediately
-    self.containerView = [[UIView alloc] initWithFrame:frame];
-    
-    NSError *error = [[VRTVungleManager singleton]
-        loadPlacementWithID:placementId
-        withSize:VungleAdSizeBanner
-        vrtVungleManagerDelegate:(id <VRTVungleManagerDelegate>) self
-    ];
-    
-    if (error) {
-        [self.customEventLoadDelegate customEventFailedToLoadWithError:error];
-        return;
-    }
-    
-    
+    self.bannerView = [[SMABannerView alloc] initWithFrame:frame];
+    self.bannerView.delegate = self;
+    [self.bannerView loadWithAdSpaceId:adSpaceId adSize:kSMABannerAdSizeXXLarge_320x50];
 }
 
 - (UIView*) getView {
-    return self.containerView;
+    return self.bannerView;
 }
 
 
-#pragma mark - VRTVungleManagerDelegate
-- (void)vungleAdViewedForPlacement:(nullable NSString *)placementID {
-    [self.customEventShowDelegate customEventShown];
-}
+#pragma mark - SMABannerViewDelegate
 
-- (void)vungleDidCloseAdForPlacementID:(nonnull NSString *)placementID {
-    [self.customEventShowDelegate customEventDidDismissModal:VRTModalTypeUnknown];
-}
-
-- (void)vungleDidShowAdForPlacementID:(nullable NSString *)placementID {
-    [self.customEventShowDelegate customEventShown];
-}
-
-- (void)vungleRewardUserForPlacementID:(nullable NSString *)placementID {
+- (void)bannerViewDidTTLExpire:(SMABannerView * _Nonnull)bannerView {
     // No VRT analog
 }
 
-- (void)vungleTrackClickForPlacementID:(nullable NSString *)placementID {
+- (nonnull UIViewController *)presentingViewControllerForBannerView:(SMABannerView * _Nonnull)bannerView {
+    return [self.viewControllerDelegate vrtViewControllerForModalPresentation];
+}
+
+- (void)bannerViewDidLoad:(SMABannerView *_Nonnull)bannerView {
+    [self.customEventLoadDelegate customEventLoaded];
+}
+
+- (void)bannerViewDidClick:(SMABannerView *_Nonnull)bannerView {
     [self.customEventShowDelegate customEventClicked];
 }
 
-- (void)vungleWillCloseAdForPlacementID:(nonnull NSString *)placementID {
-    [self.customEventShowDelegate customEventWillDismissModal:VRTModalTypeUnknown];
+- (void)bannerView:(SMABannerView *_Nonnull)bannerView didFailWithError:(NSError *_Nonnull)error {
+    [self.customEventLoadDelegate customEventFailedToLoadWithError:error];
 }
 
- - (void)vungleWillLeaveApplicationForPlacementID:(nullable NSString *)placementID {
+- (void)bannerViewWillPresentModalContent:(SMABannerView *_Nonnull)bannerView {
+    [self.customEventShowDelegate customEventWillPresentModal:VRTModalTypeUnknown];
+}
+
+- (void)bannerViewDidPresentModalContent:(SMABannerView *_Nonnull)bannerView {
+    [self.customEventShowDelegate customEventDidPresentModal:VRTModalTypeUnknown];
+}
+
+- (void)bannerViewDidDismissModalContent:(SMABannerView *_Nonnull)bannerView {
+    [self.customEventShowDelegate customEventDidDismissModal:VRTModalTypeUnknown];
+}
+
+- (void)bannerWillLeaveApplicationFromAd:(SMABannerView *_Nonnull)bannerView {
     [self.customEventShowDelegate customEventWillLeaveApplication];
 }
 
-- (void)vungleWillShowAdForPlacementID:(nullable NSString *)placementID {
-    // No VRT Analog
+- (void)bannerViewDidImpress:(SMABannerView *_Nonnull)bannerView {
+    [self.customEventShowDelegate customEventShown];
 }
 
-- (void)vungleAdPlayabilityUpdate:(BOOL)isAdPlayable placementID:(nullable NSString *)placementID error:(nullable NSError *)error {
-    
-    if (error) {
-        [self.customEventLoadDelegate customEventFailedToLoadWithError:error];
-        return;
-    }
-    
-    if (!isAdPlayable) {
-        VRTError *vrtError = [VRTError errorWithCode:VRTErrorCodeNoFill message:@"Vungle Ad Not Playable"];
-        [self.customEventLoadDelegate customEventFailedToLoadWithError:vrtError];
-        return;
-    }
-    
-    [[VRTVungleManager singleton] showBanner:placementID inContainerView:self.containerView];
-    [self.customEventLoadDelegate customEventLoaded];
-}
+
 @end
