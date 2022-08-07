@@ -15,7 +15,7 @@ Pod::Spec.new do |s|
     s.platform = :ios
     s.ios.deployment_target  = '10.0'
 
-    s.dependency 'VungleSDK-iOS'
+    s.dependency 'smaato-ios-sdk'
     s.dependency 'VrtcalSDK'
     s.pod_target_xcconfig = {
         "VALID_ARCHS[sdk=iphoneos*]" => "arm64 armv7",
