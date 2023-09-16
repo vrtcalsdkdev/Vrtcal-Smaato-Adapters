@@ -1,68 +1,38 @@
-//  Converted to Swift 5.8.1 by Swiftify v5.8.26605 - https://swiftify.com/
+
 //Header
 import SmaatoSDKInterstitial
 import VrtcalSDK
 
 //Smaato Banner Adapter, Vrtcal as Primary
 
-class VRTInterstitialCustomEventSmaato: VRTAbstractInterstitialCustomEvent, SMAInterstitialDelegate {
-    private var smaInterstitial: SMAInterstitial?
-
-    func loadInterstitialAd() {
-        let adSpaceId = customEventConfig.thirdPartyCustomEventData["adUnitId"] as? String
-
-        if adSpaceId == nil {
-            let error = VRTError(code: VRTErrorCodeCustomEvent, message: "No adSpaceId")
-            customEventLoadDelegate.customEventFailedToLoadWithError(error)
+class VRTInterstitialCustomEventSmaato: VRTAbstractInterstitialCustomEvent {
+    
+    private var smaInterstitialDelegatePassthrough = SMAInterstitialDelegatePassthrough()
+    
+    override func loadInterstitialAd() {
+        
+        guard let adSpaceId = customEventConfig.thirdPartyAdUnitId(
+            customEventLoadDelegate: customEventLoadDelegate
+        ) else {
             return
         }
-
-        SmaatoSDK.loadInterstitial(forAdSpaceId: adSpaceId, delegate: self)
+        
+        smaInterstitialDelegatePassthrough.customEventLoadDelegate = customEventLoadDelegate
+        
+        SmaatoSDK.loadInterstitial(
+            forAdSpaceId: adSpaceId,
+            delegate: smaInterstitialDelegatePassthrough
+        )
     }
-
-    func showInterstitialAd() {
-        let vc = viewControllerDelegate.vrtViewControllerForModalPresentation()
-        smaInterstitial?.show(from: vc)
-    }
-
-    // MARK: - VRTVungleManagerDelegate
-
-    func interstitialDidLoad(_ interstitial: SMAInterstitial) {
-        smaInterstitial = interstitial
-        customEventLoadDelegate.customEventLoaded()
-    }
-
-    func interstitial(_ interstitial: SMAInterstitial?, didFailWithError error: Error) {
-        customEventLoadDelegate.customEventFailedToLoadWithError(error)
-    }
-
-    func interstitialDidTTLExpire(_ interstitial: SMAInterstitial) {
-        //No VRT Analog
-    }
-
-    func interstitialWillAppear(_ interstitial: SMAInterstitial) {
-        customEventShowDelegate.customEventWillPresentModal(VRTModalTypeInterstitial)
-    }
-
-    func interstitialDidAppear(_ interstitial: SMAInterstitial) {
-        customEventShowDelegate.customEventDidPresentModal(VRTModalTypeInterstitial)
-    }
-
-    func interstitialWillDisappear(_ interstitial: SMAInterstitial) {
-        customEventShowDelegate.customEventWillDismissModal(VRTModalTypeInterstitial)
-    }
-
-    func interstitialDidDisappear(_ interstitial: SMAInterstitial) {
-        customEventShowDelegate.customEventDidDismissModal(VRTModalTypeInterstitial)
-    }
-
-    func interstitialDidClick(_ interstitial: SMAInterstitial) {
-        customEventShowDelegate.customEventClicked()
-    }
-
-    func interstitialWillLeaveApplication(_ interstitial: SMAInterstitial) {
-        customEventShowDelegate.customEventWillLeaveApplication()
+    
+    override func showInterstitialAd() {
+        guard let vc = viewControllerDelegate?.vrtViewControllerForModalPresentation() else {
+            customEventShowDelegate?.customEventFailedToShow(
+                vrtError: .customEventViewControllerNil
+            )
+            return
+        }
+        smaInterstitialDelegatePassthrough.smaInterstitial?.show(from: vc)
     }
 }
 
-//Dependencies
