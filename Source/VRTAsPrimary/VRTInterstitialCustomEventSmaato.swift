@@ -26,6 +26,7 @@ class VRTInterstitialCustomEventSmaato: VRTAbstractInterstitialCustomEvent {
     }
     
     override func showInterstitialAd() {
+        smaInterstitialDelegatePassthrough.customEventShowDelegate = customEventShowDelegate
         guard let vc = viewControllerDelegate?.vrtViewControllerForModalPresentation() else {
             customEventShowDelegate?.customEventFailedToShow(
                 vrtError: .customEventViewControllerNil

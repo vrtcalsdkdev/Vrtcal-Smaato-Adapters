@@ -12,13 +12,12 @@ class VRTBannerCustomEventSmaato: VRTAbstractBannerCustomEvent {
     override func loadBannerAd() {
         
         
-        guard let adSpaceId = customEventConfig.thirdPartyAppId(
+        guard let adSpaceId = customEventConfig.thirdPartyAdUnitId(
             customEventLoadDelegate: customEventLoadDelegate
         ) else {
             return
         }
-        
-        
+      
         let frame = CGRect(
             x: 0,
             y: 0,
@@ -28,8 +27,7 @@ class VRTBannerCustomEventSmaato: VRTAbstractBannerCustomEvent {
         
         smaBannerViewDelegatePassthrough.viewControllerDelegate = viewControllerDelegate
         smaBannerViewDelegatePassthrough.customEventLoadDelegate = customEventLoadDelegate
-        smaBannerViewDelegatePassthrough.customEventShowDelegate = customEventShowDelegate
-        
+
         bannerView = SMABannerView(frame: frame)
         bannerView?.delegate = smaBannerViewDelegatePassthrough
         bannerView?.load(
@@ -39,6 +37,7 @@ class VRTBannerCustomEventSmaato: VRTAbstractBannerCustomEvent {
     }
     
     override func getView() -> UIView? {
+        smaBannerViewDelegatePassthrough.customEventShowDelegate = customEventShowDelegate
         return bannerView
     }
 }
@@ -62,35 +61,43 @@ class SMABannerViewDelegatePassthrough: NSObject, SMABannerViewDelegate {
     }
 
     func bannerViewDidLoad(_ bannerView: SMABannerView) {
+        VRTLogInfo()
         customEventLoadDelegate?.customEventLoaded()
     }
 
     func bannerViewDidClick(_ bannerView: SMABannerView) {
+        VRTLogInfo()
         customEventShowDelegate?.customEventClicked()
     }
 
     func bannerView(_ bannerView: SMABannerView, didFailWithError error: Error) {
+        VRTLogInfo("error: \(error)")
         let vrtError = VRTError(vrtErrorCode: .customEvent, error: error)
         customEventLoadDelegate?.customEventFailedToLoad(vrtError: vrtError)
     }
 
     func bannerViewWillPresentModalContent(_ bannerView: SMABannerView) {
+        VRTLogInfo()
         customEventShowDelegate?.customEventWillPresentModal(.unknown)
     }
 
     func bannerViewDidPresentModalContent(_ bannerView: SMABannerView) {
+        VRTLogInfo()
         customEventShowDelegate?.customEventDidPresentModal(.unknown)
     }
 
     func bannerViewDidDismissModalContent(_ bannerView: SMABannerView) {
+        VRTLogInfo()
         customEventShowDelegate?.customEventDidDismissModal(.unknown)
     }
 
     func bannerWillLeaveApplication(fromAd bannerView: SMABannerView) {
+        VRTLogInfo()
         customEventShowDelegate?.customEventWillLeaveApplication()
     }
 
     func bannerViewDidImpress(_ bannerView: SMABannerView) {
+        VRTLogInfo()
         customEventShowDelegate?.customEventShown()
     }
 }
