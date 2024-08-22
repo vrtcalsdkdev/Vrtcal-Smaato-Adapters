@@ -10,8 +10,22 @@ class VRTInterstitialCustomEventSmaato: VRTAbstractInterstitialCustomEvent {
     private var smaInterstitialDelegatePassthrough = SMAInterstitialDelegatePassthrough()
     
     override func loadInterstitialAd() {
-        
-        guard let adSpaceId = customEventConfig.thirdPartyAdUnitId(
+        VRTAsPrimaryManager.singleton.initializeThirdParty(
+            customEventConfig: customEventConfig
+        ) { result in
+            switch result {
+            case .success():
+                self.finishLoadingInterstitial()
+            case .failure(let vrtError):
+                self.customEventLoadDelegate?.customEventFailedToLoad(vrtError: vrtError)
+            }
+        }
+    }
+    
+    func finishLoadingInterstitial() {
+
+        guard let adSpaceId = customEventConfig.thirdPartyCustomEventDataValueOrFailToLoad(
+            thirdPartyCustomEventKey: ThirdPartyCustomEventKey.adUnitId,
             customEventLoadDelegate: customEventLoadDelegate
         ) else {
             return

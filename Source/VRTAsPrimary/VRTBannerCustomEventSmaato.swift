@@ -11,8 +11,21 @@ class VRTBannerCustomEventSmaato: VRTAbstractBannerCustomEvent {
     
     override func loadBannerAd() {
         
-        
-        guard let adSpaceId = customEventConfig.thirdPartyAdUnitId(
+        VRTAsPrimaryManager.singleton.initializeThirdParty(
+            customEventConfig: customEventConfig
+        ) { result in
+            switch result {
+            case .success():
+                self.finishLoadingBanner()
+            case .failure(let vrtError):
+                self.customEventLoadDelegate?.customEventFailedToLoad(vrtError: vrtError)
+            }
+        }
+    }
+    
+    func finishLoadingBanner() {
+        guard let adSpaceId = customEventConfig.thirdPartyCustomEventDataValueOrFailToLoad(
+            thirdPartyCustomEventKey: ThirdPartyCustomEventKey.adUnitId,
             customEventLoadDelegate: customEventLoadDelegate
         ) else {
             return
